@@ -1,0 +1,147 @@
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
+export interface CanvasElement {
+  id: string;
+  field: string;
+  x: number;
+  y: number;
+  width: number;
+  fontSize: number;
+  color: string;
+  fontWeight: string;
+  textAlign: string;
+}
+
+@Component({
+  selector: 'app-editor',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './editor.component.html',
+  styleUrl: './editor.component.scss'
+})
+export class EditorComponent {
+  availableFields = ['Place', 'Bibcode', 'Distance', 'FullName', 'Age', 'Category', 'Group'];
+  
+  layout: 'portrait' | 'landscape' = 'landscape';
+  
+  elements: CanvasElement[] = [];
+  selectedElement: CanvasElement | null = null;
+  draggedField: string | null = null;
+
+  draggingElementId: string | null = null;
+  elementDragOffsetX = 0;
+  elementDragOffsetY = 0;
+
+  setLayout(layout: 'portrait' | 'landscape') {
+    this.layout = layout;
+  }
+
+  onDragStartNew(event: DragEvent, field: string) {
+    this.draggedField = field;
+    this.draggingElementId = null;
+    if (event.dataTransfer) {
+      event.dataTransfer.setData('text/plain', field);
+      event.dataTransfer.effectAllowed = 'copy';
+    }
+  }
+
+  onDragStartExisting(event: DragEvent, el: CanvasElement) {
+    this.draggingElementId = el.id;
+    this.draggedField = null;
+    
+    // Attempt to compute offset within the element being dragged
+    const target = event.target as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    
+    this.elementDragOffsetX = event.clientX - rect.left;
+    this.elementDragOffsetY = event.clientY - rect.top;
+
+    if (event.dataTransfer) {
+      event.dataTransfer.setData('text/plain', el.id);
+      event.dataTransfer.effectAllowed = 'move';
+    }
+    
+    // Prevents potential drag conflicts
+    event.stopPropagation();
+  }
+
+  allowDrop(event: DragEvent) {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = this.draggingElementId ? 'move' : 'copy';
+    }
+  }
+
+  onDrop(event: DragEvent) {
+    event.preventDefault();
+
+    const target = event.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    
+    // A simple way to compute the CSS transform scale applied to the canvas div
+    // We compare standard expected width to bounding client rect width
+    const expectedWidth = this.layout === 'landscape' ? 1123 : 794;
+    const scale = rect.width / expectedWidth; 
+
+    if (this.draggingElementId) {
+      const el = this.elements.find(e => e.id === this.draggingElementId);
+      if (el) {
+        // Calculate new position converting to the unscaled canvas coordinates
+        const dropX = (event.clientX - rect.left - this.elementDragOffsetX) / scale;
+        const dropY = (event.clientY - rect.top - this.elementDragOffsetY) / scale;
+
+        el.x = dropX;
+        el.y = dropY;
+      }
+      this.draggingElementId = null;
+      return;
+    }
+
+    if (this.draggedField) {
+      const dropX = (event.clientX - rect.left) / scale;
+      const dropY = (event.clientY - rect.top) / scale;
+
+      const newElement: CanvasElement = {
+        id: Math.random().toString(36).substring(2, 9),
+        field: this.draggedField,
+        x: dropX,
+        y: dropY,
+        width: 150,
+        fontSize: 24,
+        color: '#000000',
+        fontWeight: 'normal',
+        textAlign: 'left'
+      };
+
+      this.elements.push(newElement);
+      // Automatically open the side panel to edit properties when first added
+      this.selectedElement = newElement;
+      this.draggedField = null;
+    }
+  }
+
+  onCanvasElementClick(event: MouseEvent, el: CanvasElement) {
+    event.stopPropagation();
+    this.selectedElement = el; // Single click selects and opens panel
+  }
+
+  onCanvasElementDoubleClick(event: MouseEvent, el: CanvasElement) {
+    event.stopPropagation();
+    this.selectedElement = el; // Double click optionally, but single click already does it
+  }
+
+  onCanvasClick() {
+    this.selectedElement = null; // Click anywhere else deselects
+  }
+
+  deselectElement() {
+    this.selectedElement = null;
+  }
+
+  deleteElement(el: CanvasElement) {
+    this.elements = this.elements.filter(e => e.id !== el.id);
+    this.selectedElement = null;
+  }
+}

@@ -1,0 +1,170 @@
+<div class="flex h-screen w-screen text-slate-800 font-sans">
+  <!-- Sidebar -->
+  <aside class="w-[320px] min-w-[320px] bg-white py-6 px-5 flex flex-col gap-6 shadow-[1px_0_10px_rgba(0,0,0,0.03)] z-10 overflow-auto">
+    
+    <!-- Left panel content (Fields / Add) -->
+    <ng-container *ngIf="!selectedElement">
+      <!-- Select Event Box -->
+      <div class="flex flex-col gap-3 shrink-0">
+        <label class="text-[13px] font-semibold text-slate-400 tracking-[0.2px]">Select Event Box</label>
+        <div class="relative">
+          <select class="w-full appearance-none bg-slate-50 border border-slate-200 rounded-lg py-3 pl-3.5 pr-9 text-sm text-slate-500 cursor-pointer outline-none focus:border-slate-300">
+            <option value="" disabled selected>Select an event box</option>
+            <option value="1">Event Box 1</option>
+          </select>
+          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none flex items-center">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5H7z" fill="currentColor"/></svg>
+          </span>
+        </div>
+      </div>
+
+      <!-- Available Fields -->
+      <div class="flex-1 flex flex-col gap-3 min-h-[200px]">
+        <label class="text-[13px] font-semibold text-slate-400 tracking-[0.2px]">Available Fields (Drag to Canvas)</label>
+        <div class="flex flex-col gap-2 overflow-y-auto pr-2 scrollbar-thin">
+          <div *ngFor="let field of availableFields"
+               draggable="true" 
+               (dragstart)="onDragStartNew($event, field)"
+               class="bg-[#f3f6f8] text-[#2fb13c] text-sm font-medium py-2.5 px-3.5 rounded cursor-grab transition-all hover:bg-[#eaf1ed] active:cursor-grabbing">
+             {{ field }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload Background -->
+      <div class="flex flex-col gap-3 shrink-0">
+        <div class="border-2 border-dashed border-[#c0c9d8] rounded-lg bg-[#fafbfd] flex flex-col items-center justify-center py-6 px-4 gap-3 cursor-pointer transition-colors hover:bg-[#f1f5ff] hover:border-[#92abf2]">
+          <div class="text-[#c9c4db] flex">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="12" y1="18" x2="12" y2="12"></line>
+              <line x1="9" y1="15" x2="15" y2="15"></line>
+            </svg>
+          </div>
+          <span class="text-[#4b8af7] text-xs font-medium">Upload background image</span>
+        </div>
+      </div>
+
+      <!-- Layout Buttons -->
+      <div class="flex flex-row gap-3 mt-auto shrink-0 pt-4">
+        <button [ngClass]="layout === 'portrait' ? 'border-[#d1ead1] bg-[#fafffa] text-[#47b848]' : 'border-slate-200 bg-white text-[#7bb57b] hover:bg-slate-50'" 
+                (click)="setLayout('portrait')"
+                class="flex-1 border rounded-lg py-2.5 flex flex-col items-center justify-center cursor-pointer transition-colors">
+          <span class="text-[13px] font-semibold leading-relaxed">A4</span>
+          <span class="text-[13px] font-semibold leading-relaxed">Portrait</span>
+        </button>
+        <button [ngClass]="layout === 'landscape' ? 'border-[#d1ead1] bg-[#fafffa] text-[#47b848]' : 'border-slate-200 bg-white text-[#7bb57b] hover:bg-slate-50 focus:outline-none'" 
+                (click)="setLayout('landscape')"
+                class="flex-1 border rounded-lg py-2.5 flex flex-col items-center justify-center cursor-pointer transition-colors focus:outline-none">
+          <span class="text-[13px] font-semibold leading-relaxed">A4</span>
+          <span class="text-[13px] font-semibold leading-relaxed">Landscape</span>
+        </button>
+      </div>
+    </ng-container>
+
+    <!-- Properties Panel (When Selected) -->
+    <ng-container *ngIf="selectedElement">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
+         <h3 class="font-bold text-slate-700">Element Properties</h3>
+         <button (click)="deselectElement()" class="text-sm text-slate-400 hover:text-slate-600 font-medium">Back</button>
+      </div>
+      
+      <div class="flex-1 overflow-y-auto pr-2 pb-4 pt-2 -mr-2 scrollbar-thin">
+        <div class="flex flex-col gap-5">
+          <div class="flex flex-col gap-2">
+             <label class="text-[12px] font-semibold text-slate-400 uppercase tracking-wider">Field Data</label>
+             <input type="text" disabled [value]="selectedElement.field" class="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm text-slate-700 font-semibold cursor-not-allowed">
+          </div>
+          
+          <div class="flex flex-col gap-2">
+             <label class="text-[12px] font-semibold text-slate-400 uppercase tracking-wider">Font Size (px)</label>
+             <input type="number" [(ngModel)]="selectedElement.fontSize" class="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 text-sm focus:border-blue-400 outline-none text-slate-700 transition-colors">
+          </div>
+          
+          <div class="flex flex-col gap-2">
+             <label class="text-[12px] font-semibold text-slate-400 uppercase tracking-wider">Color</label>
+             <div class="flex items-center gap-2">
+                <input type="color" [(ngModel)]="selectedElement.color" class="w-10 h-10 border-0 p-0 rounded-lg cursor-pointer shrink-0">
+                <input type="text" [(ngModel)]="selectedElement.color" class="flex-1 min-w-0 bg-white border border-slate-200 rounded-lg py-2.5 px-3 text-sm focus:border-blue-400 outline-none uppercase font-mono text-slate-700">
+             </div>
+          </div>
+    
+          <div class="flex flex-col gap-2">
+             <label class="text-[12px] font-semibold text-slate-400 uppercase tracking-wider">Container Width (px)</label>
+             <input type="number" [(ngModel)]="selectedElement.width" class="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 text-sm focus:border-blue-400 outline-none text-slate-700">
+          </div>
+          
+          <div class="flex flex-col gap-2">
+             <label class="text-[12px] font-semibold text-slate-400 uppercase tracking-wider">Font Weight</label>
+             <select [(ngModel)]="selectedElement.fontWeight" class="w-full bg-white border border-slate-200 rounded-lg py-2.5 px-3 text-sm focus:border-blue-400 outline-none text-slate-700">
+               <option value="normal">Normal</option>
+               <option value="bold">Bold</option>
+               <option value="600">Semi-Bold</option>
+               <option value="300">Light</option>
+             </select>
+          </div>
+
+          <div class="flex flex-col gap-2">
+             <label class="text-[12px] font-semibold text-slate-400 uppercase tracking-wider">Text Alignment</label>
+             <select [(ngModel)]="selectedElement.textAlign" class="w-full bg-white border border-slate-200 rounded-lg py-2.5 px-3 text-sm focus:border-blue-400 outline-none text-slate-700">
+               <option value="left">Left</option>
+               <option value="center">Center</option>
+               <option value="right">Right</option>
+             </select>
+          </div>
+        </div>
+      </div>
+      
+      <div class="pt-4 border-t border-slate-100 shrink-0">
+        <button (click)="deleteElement(selectedElement)" class="px-4 py-2.5 border border-red-200 text-red-500 bg-red-50/50 rounded-lg hover:bg-red-50 hover:border-red-300 transition-colors font-semibold text-sm w-full">
+           Delete Field
+        </button>
+      </div>
+    </ng-container>
+  </aside>
+
+  <!-- Main Canvas Area -->
+  <main class="flex-1 bg-[#f3f6fa] p-4 flex overflow-hidden">
+    <div class="flex-1 bg-transparent border-2 border-dashed border-[#b1b9ca] rounded-2xl m-2 relative overflow-auto shadow-inner flex items-center justify-center p-8"
+         (click)="onCanvasClick()">
+      
+      <!-- The Canvas Document -->
+      <div class="bg-white shadow-[0_4px_24px_rgba(0,0,0,0.08)] relative box-border overflow-hidden transition-all duration-300 transform origin-center shrink-0"
+           style="transform: scale(0.6);"
+           [ngClass]="{
+             'w-[794px] h-[1123px]': layout === 'portrait',
+             'w-[1123px] h-[794px]': layout === 'landscape'
+           }"
+           (dragover)="allowDrop($event)"
+           (drop)="onDrop($event)">
+           
+           <!-- Elements placed inside the canvas -->
+           <div *ngFor="let el of elements" 
+                draggable="true"
+                (dragstart)="onDragStartExisting($event, el)"
+                (mousedown)="onCanvasElementClick($event, el)"
+                (dblclick)="onCanvasElementDoubleClick($event, el)"
+                class="absolute cursor-move overflow-visible border-2 transition-colors bg-blue-50/30 font-sans shadow-sm rounded flex items-center"
+                [ngClass]="selectedElement?.id === el.id ? 'border-blue-400 z-50 ring-2 ring-blue-100' : 'border-dashed border-blue-200/60 hover:border-blue-300 z-10'"
+                [style.left.px]="el.x" 
+                [style.top.px]="el.y"
+                [style.width.px]="el.width"
+                [style.fontSize.px]="el.fontSize"
+                [style.color]="el.color"
+                [style.fontWeight]="el.fontWeight"
+                [style.textAlign]="el.textAlign">
+                <!-- Data placeholder -->
+                <span class="w-full inline-block truncate px-1 uppercase" [style.textAlign]="el.textAlign">
+                  {{ '{' + el.field + '}' }}
+                </span>
+           </div>
+           
+           <!-- Drag drop placeholder hint -->
+           <div *ngIf="elements.length === 0" class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
+              <span class="text-3xl font-semibold text-slate-300">Drag fields here</span>
+           </div>
+      </div>
+    </div>
+  </main>
+</div>
