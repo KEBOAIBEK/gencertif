@@ -24,14 +24,14 @@ export interface CanvasElement {
 export class EditorComponent implements AfterViewInit, OnDestroy {
   @ViewChild('wrapper') wrapper!: ElementRef<HTMLDivElement>;
 
-  availableFields = ['Place', 'Bibcode', 'Distance', 'FullName', 'Age', 'Category', 'Group'];
+  availableFields = ['Place', 'Bibcode', 'Distance', 'FullName', 'Age', 'Category', 'Group', 'FullName', 'Age', 'Category', 'Group'];
   
   layout: 'portrait' | 'landscape' = 'landscape';
   backgroundImage: string | null = null;
   canvasScale: number = 0.6;
   
   elements: CanvasElement[] = [];
-  selectedElement: CanvasElement | null = null;
+  focusedElement: CanvasElement | null = null; // selected element — opens right panel on single click
   draggedField: string | null = null;
 
   draggingElementId: string | null = null;
@@ -167,33 +167,34 @@ export class EditorComponent implements AfterViewInit, OnDestroy {
       };
 
       this.elements.push(newElement);
-      // Automatically open the side panel to edit properties when first added
-      this.selectedElement = newElement;
+      // Highlight the new element and open properties panel right away
+      this.focusedElement = newElement;
       this.draggedField = null;
     }
   }
 
   onCanvasElementClick(event: MouseEvent, el: CanvasElement) {
-    event.stopPropagation();
-    this.selectedElement = el; // Single click selects and opens panel
+    event.stopPropagation(); // prevent canvas click from firing and clearing focusedElement
+    this.focusedElement = el;
   }
 
   onCanvasElementDoubleClick(event: MouseEvent, el: CanvasElement) {
     event.stopPropagation();
-    this.selectedElement = el; // Double click optionally, but single click already does it
+    this.focusedElement = el;
   }
 
   onCanvasClick() {
-    this.selectedElement = null; // Click anywhere else deselects
+    // Click on empty canvas area: close the right panel
+    this.focusedElement = null;
   }
 
   deselectElement() {
-    this.selectedElement = null;
+    this.focusedElement = null;
   }
 
   deleteElement(el: CanvasElement) {
     this.elements = this.elements.filter(e => e.id !== el.id);
-    this.selectedElement = null;
+    this.focusedElement = null;
   }
 
   downloadJson() {
