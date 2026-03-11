@@ -25,6 +25,7 @@ export class EditorComponent {
   availableFields = ['Place', 'Bibcode', 'Distance', 'FullName', 'Age', 'Category', 'Group'];
   
   layout: 'portrait' | 'landscape' = 'landscape';
+  backgroundImage: string | null = null;
   
   elements: CanvasElement[] = [];
   selectedElement: CanvasElement | null = null;
@@ -36,6 +37,17 @@ export class EditorComponent {
 
   setLayout(layout: 'portrait' | 'landscape') {
     this.layout = layout;
+  }
+
+  onBackgroundUpload(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.backgroundImage = e.target?.result as string;
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
   }
 
   onDragStartNew(event: DragEvent, field: string) {
@@ -143,5 +155,28 @@ export class EditorComponent {
   deleteElement(el: CanvasElement) {
     this.elements = this.elements.filter(e => e.id !== el.id);
     this.selectedElement = null;
+  }
+
+  downloadJson() {
+    const data = {
+      layout: this.layout,
+      backgroundImage: this.backgroundImage,
+      elements: this.elements
+    };
+    
+    // Create a Blob from the JSON data
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    
+    // Create a temporary anchor to trigger the download
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'certificate-template.json';
+    document.body.appendChild(anchor);
+    anchor.click();
+    
+    // Cleanup
+    document.body.removeChild(anchor);
+    window.URL.revokeObjectURL(url);
   }
 }

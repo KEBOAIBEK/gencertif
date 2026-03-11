@@ -4,20 +4,6 @@
     
     <!-- Left panel content (Fields / Add) -->
     <ng-container *ngIf="!selectedElement">
-      <!-- Select Event Box -->
-      <div class="flex flex-col gap-3 shrink-0">
-        <label class="text-[13px] font-semibold text-slate-400 tracking-[0.2px]">Select Event Box</label>
-        <div class="relative">
-          <select class="w-full appearance-none bg-slate-50 border border-slate-200 rounded-lg py-3 pl-3.5 pr-9 text-sm text-slate-500 cursor-pointer outline-none focus:border-slate-300">
-            <option value="" disabled selected>Select an event box</option>
-            <option value="1">Event Box 1</option>
-          </select>
-          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none flex items-center">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5H7z" fill="currentColor"/></svg>
-          </span>
-        </div>
-      </div>
-
       <!-- Available Fields -->
       <div class="flex-1 flex flex-col gap-3 min-h-[200px]">
         <label class="text-[13px] font-semibold text-slate-400 tracking-[0.2px]">Available Fields (Drag to Canvas)</label>
@@ -33,7 +19,7 @@
 
       <!-- Upload Background -->
       <div class="flex flex-col gap-3 shrink-0">
-        <div class="border-2 border-dashed border-[#c0c9d8] rounded-lg bg-[#fafbfd] flex flex-col items-center justify-center py-6 px-4 gap-3 cursor-pointer transition-colors hover:bg-[#f1f5ff] hover:border-[#92abf2]">
+        <label for="bg-upload" class="border-2 border-dashed border-[#c0c9d8] rounded-lg bg-[#fafbfd] flex flex-col items-center justify-center py-6 px-4 gap-3 cursor-pointer transition-colors hover:bg-[#f1f5ff] hover:border-[#92abf2]">
           <div class="text-[#c9c4db] flex">
             <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -43,7 +29,8 @@
             </svg>
           </div>
           <span class="text-[#4b8af7] text-xs font-medium">Upload background image</span>
-        </div>
+        </label>
+        <input type="file" id="bg-upload" class="hidden" accept="image/*" (change)="onBackgroundUpload($event)">
       </div>
 
       <!-- Layout Buttons -->
@@ -59,6 +46,18 @@
                 class="flex-1 border rounded-lg py-2.5 flex flex-col items-center justify-center cursor-pointer transition-colors focus:outline-none">
           <span class="text-[13px] font-semibold leading-relaxed">A4</span>
           <span class="text-[13px] font-semibold leading-relaxed">Landscape</span>
+        </button>
+      </div>
+
+      <!-- Download JSON Button -->
+      <div class="pt-2 shrink-0">
+        <button (click)="downloadJson()" class="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-sm w-full flex items-center justify-center gap-2 shadow-sm">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Export Output
         </button>
       </div>
     </ng-container>
@@ -132,6 +131,10 @@
       <!-- The Canvas Document -->
       <div class="bg-white shadow-[0_4px_24px_rgba(0,0,0,0.08)] relative box-border overflow-hidden transition-all duration-300 transform origin-center shrink-0"
            style="transform: scale(0.6);"
+           [style.backgroundImage]="backgroundImage ? 'url(' + backgroundImage + ')' : null"
+           [style.backgroundSize]="'100% 100%'"
+           [style.backgroundPosition]="'center'"
+           [style.backgroundRepeat]="'no-repeat'"
            [ngClass]="{
              'w-[794px] h-[1123px]': layout === 'portrait',
              'w-[1123px] h-[794px]': layout === 'landscape'
