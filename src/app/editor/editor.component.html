@@ -125,12 +125,12 @@
 
   <!-- Main Canvas Area -->
   <main class="flex-1 bg-[#f3f6fa] p-4 flex overflow-hidden">
-    <div class="flex-1 bg-transparent border-2 border-dashed border-[#b1b9ca] rounded-2xl m-2 relative overflow-auto shadow-inner flex items-center justify-center p-8"
+    <div #wrapper class="flex-1 bg-transparent border-2 border-dashed border-[#b1b9ca] rounded-2xl m-2 relative overflow-hidden shadow-inner flex items-center justify-center p-8"
          (click)="onCanvasClick()">
       
       <!-- The Canvas Document -->
       <div class="bg-white shadow-[0_4px_24px_rgba(0,0,0,0.08)] relative box-border overflow-hidden transition-all duration-300 transform origin-center shrink-0"
-           style="transform: scale(0.6);"
+           [style.transform]="'scale(' + canvasScale + ')'"
            [style.backgroundImage]="backgroundImage ? 'url(' + backgroundImage + ')' : null"
            [style.backgroundSize]="'100% 100%'"
            [style.backgroundPosition]="'center'"

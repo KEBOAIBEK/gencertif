@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 export interface CanvasElement {
@@ -21,11 +21,14 @@ export interface CanvasElement {
   templateUrl: './editor.component.html',
   styleUrl: './editor.component.scss'
 })
-export class EditorComponent {
+export class EditorComponent implements AfterViewInit, OnDestroy {
+  @ViewChild('wrapper') wrapper!: ElementRef<HTMLDivElement>;
+
   availableFields = ['Place', 'Bibcode', 'Distance', 'FullName', 'Age', 'Category', 'Group'];
   
   layout: 'portrait' | 'landscape' = 'landscape';
   backgroundImage: string | null = null;
+  canvasScale: number = 0.6;
   
   elements: CanvasElement[] = [];
   selectedElement: CanvasElement | null = null;
@@ -35,8 +38,44 @@ export class EditorComponent {
   elementDragOffsetX = 0;
   elementDragOffsetY = 0;
 
+  private isBrowser: boolean;
+  private resizeListener = () => this.calculateScale();
+
+  constructor(@Inject(PLATFORM_ID) platformId: Object) {
+    this.isBrowser = isPlatformBrowser(platformId);
+  }
+
+  ngAfterViewInit() {
+    if (!this.isBrowser) return;
+    setTimeout(() => this.calculateScale());
+    window.addEventListener('resize', this.resizeListener);
+  }
+  
+  ngOnDestroy() {
+    if (!this.isBrowser) return;
+    window.removeEventListener('resize', this.resizeListener);
+  }
+
+  calculateScale() {
+    if (!this.wrapper) return;
+    const wrapperRect = this.wrapper.nativeElement.getBoundingClientRect();
+    const padding = 64; // Margin around the canvas within the workspace
+    const availableWidth = wrapperRect.width - padding;
+    const availableHeight = wrapperRect.height - padding;
+
+    // Use current physical dimensions of standard A4 based on layout
+    const docWidth = this.layout === 'landscape' ? 1123 : 794;
+    const docHeight = this.layout === 'landscape' ? 794 : 1123;
+
+    const scaleX = availableWidth / docWidth;
+    const scaleY = availableHeight / docHeight;
+    // Scale uniformly to fit within both dimensions
+    this.canvasScale = Math.min(scaleX, scaleY);
+  }
+
   setLayout(layout: 'portrait' | 'landscape') {
     this.layout = layout;
+    setTimeout(() => this.calculateScale());
   }
 
   onBackgroundUpload(event: Event) {
