@@ -31,6 +31,23 @@
              class="bg-[#f3f6f8] text-[#2fb13c] text-sm font-medium py-2.5 px-3.5 rounded cursor-grab transition-all hover:bg-[#eaf1ed] active:cursor-grabbing shrink-0">
           {{ field }}
         </div>
+
+        <!-- QR Code special drag item -->
+        <div draggable="true"
+             (dragstart)="onDragStartNew($event, qrField)"
+             class="mt-1 flex items-center gap-2.5 bg-violet-50 border border-violet-200 text-violet-700 text-sm font-semibold py-2.5 px-3.5 rounded-lg cursor-grab transition-all hover:bg-violet-100 active:cursor-grabbing shrink-0">
+          <!-- mini QR icon -->
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+            <rect x="3" y="3" width="7" height="7"/>
+            <rect x="14" y="3" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+            <rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/>
+            <rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/>
+            <rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/>
+            <path d="M14 14h3v3h-3zM17 17h3v3h-3zM14 20h3"/>
+          </svg>
+          QR Code
+        </div>
       </div>
     </div>
 
@@ -103,20 +120,101 @@
                 draggable="true"
                 (dragstart)="onDragStartExisting($event, el)"
                 (click)="onCanvasElementClick($event, el)"
-                class="absolute cursor-pointer overflow-visible border-2 transition-colors bg-blue-50/30 font-sans shadow-sm rounded flex items-center"
+                class="absolute overflow-visible border-2 transition-colors font-sans shadow-sm rounded flex items-center"
                 [ngClass]="focusedElement?.id === el.id
-                  ? 'border-blue-400 z-50 ring-2 ring-blue-100'
-                  : 'border-dashed border-blue-200/60 hover:border-blue-300 z-10'"
+                  ? (el.field === '__QRCode__' ? 'border-violet-400 z-50 ring-2 ring-violet-100 cursor-default' : 'border-blue-400 z-50 ring-2 ring-blue-100 cursor-pointer')
+                  : (el.field === '__QRCode__' ? 'border-dashed border-violet-300 hover:border-violet-400 z-10 cursor-default' : 'border-dashed border-blue-200/60 hover:border-blue-300 z-10 cursor-pointer')"
+                [ngClass]="el.field === '__QRCode__' ? 'bg-violet-50/50' : 'bg-blue-50/30'"
                 [style.left.px]="el.x"
                 [style.top.px]="el.y"
                 [style.width.px]="el.width"
+                [style.height.px]="el.field === '__QRCode__' ? el.width : el.fontSize * 1.6"
                 [style.fontSize.px]="el.fontSize"
                 [style.color]="el.color"
                 [style.fontWeight]="el.fontWeight"
                 [style.textAlign]="el.textAlign">
-                <span class="w-full inline-block truncate px-1 uppercase" [style.textAlign]="el.textAlign">
-                  {{ '{' + el.field + '}' }}
-                </span>
+
+                <!-- QR placeholder visual -->
+                <ng-container *ngIf="el.field === '__QRCode__'">
+                  <div class="w-full h-full"
+                       [style.background]="el.qrBgColor || '#ffffff'"
+                       style="padding:2px; border-radius:2px; overflow:hidden">
+                    <svg class="w-full h-full" viewBox="0 0 23 23"
+                         xmlns="http://www.w3.org/2000/svg"
+                         shape-rendering="crispEdges">
+                      <!-- Background fill -->
+                      <rect x="0" y="0" width="23" height="23"
+                            [attr.fill]="el.qrBgColor || '#ffffff'"/>
+
+                      <!-- === FINDER PATTERNS (3 corner boxes) === -->
+                      <!-- Top-Left -->
+                      <rect x="1" y="1" width="7" height="7"
+                            [attr.rx]="el.qrCornerStyle === 'rounded' ? 1.6 : 0.1"
+                            [attr.fill]="el.qrFgColor || '#000000'"/>
+                      <rect x="2" y="2" width="5" height="5"
+                            [attr.rx]="el.qrCornerStyle === 'rounded' ? 0.9 : 0.1"
+                            [attr.fill]="el.qrBgColor || '#ffffff'"/>
+                      <rect x="3" y="3" width="3" height="3"
+                            [attr.rx]="el.qrCornerStyle === 'rounded' ? 0.5 : 0.1"
+                            [attr.fill]="el.qrFgColor || '#000000'"/>
+                      <!-- Top-Right -->
+                      <rect x="15" y="1" width="7" height="7"
+                            [attr.rx]="el.qrCornerStyle === 'rounded' ? 1.6 : 0.1"
+                            [attr.fill]="el.qrFgColor || '#000000'"/>
+                      <rect x="16" y="2" width="5" height="5"
+                            [attr.rx]="el.qrCornerStyle === 'rounded' ? 0.9 : 0.1"
+                            [attr.fill]="el.qrBgColor || '#ffffff'"/>
+                      <rect x="17" y="3" width="3" height="3"
+                            [attr.rx]="el.qrCornerStyle === 'rounded' ? 0.5 : 0.1"
+                            [attr.fill]="el.qrFgColor || '#000000'"/>
+                      <!-- Bottom-Left -->
+                      <rect x="1" y="15" width="7" height="7"
+                            [attr.rx]="el.qrCornerStyle === 'rounded' ? 1.6 : 0.1"
+                            [attr.fill]="el.qrFgColor || '#000000'"/>
+                      <rect x="2" y="16" width="5" height="5"
+                            [attr.rx]="el.qrCornerStyle === 'rounded' ? 0.9 : 0.1"
+                            [attr.fill]="el.qrBgColor || '#ffffff'"/>
+                      <rect x="3" y="17" width="3" height="3"
+                            [attr.rx]="el.qrCornerStyle === 'rounded' ? 0.5 : 0.1"
+                            [attr.fill]="el.qrFgColor || '#000000'"/>
+
+                      <!-- === DATA + TIMING MODULES === -->
+                      <ng-container *ngFor="let row of qrMatrix; let r = index">
+                        <ng-container *ngFor="let on of row; let c = index">
+                          <ng-container *ngIf="on && !isFinderArea(r, c)">
+                            <!-- Circle dots -->
+                            <circle *ngIf="el.qrDotStyle === 'dots'"
+                                    [attr.cx]="c + 1.5" [attr.cy]="r + 1.5" r="0.42"
+                                    [attr.fill]="el.qrFgColor || '#000000'"/>
+                            <!-- Square or Rounded small rects -->
+                            <rect *ngIf="el.qrDotStyle !== 'dots'"
+                                  [attr.x]="c + 1.1" [attr.y]="r + 1.1"
+                                  width="0.8" height="0.8"
+                                  [attr.rx]="el.qrDotStyle === 'rounded' ? 0.4 : 0.05"
+                                  [attr.fill]="el.qrFgColor || '#000000'"/>
+                          </ng-container>
+                        </ng-container>
+                      </ng-container>
+                    </svg>
+                  </div>
+                </ng-container>
+
+
+                <!-- Text element -->
+                <ng-container *ngIf="el.field !== '__QRCode__'">
+                  <span class="w-full inline-block truncate px-1 uppercase" [style.textAlign]="el.textAlign">
+                    {{ '{' + el.field + '}' }}
+                  </span>
+                </ng-container>
+
+                <!-- Resize handle — right edge, only when focused -->
+                <div *ngIf="focusedElement?.id === el.id"
+                     (mousedown)="onResizeStart($event, el)"
+                     class="absolute top-0 right-0 h-full w-3 flex items-center justify-center cursor-ew-resize z-50 group"
+                     style="right: -6px;">
+                  <div class="w-1.5 h-6 rounded-full shadow group-hover:opacity-80 transition-colors"
+                       [ngClass]="el.field === '__QRCode__' ? 'bg-violet-500' : 'bg-blue-500'"></div>
+                </div>
            </div>
 
            <!-- Drag drop placeholder hint -->
@@ -156,34 +254,128 @@
           <!-- Field name (readonly) -->
           <div class="flex flex-col gap-2">
             <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Field</label>
-            <input type="text" disabled [value]="el.field"
+            <div *ngIf="el.field === '__QRCode__'"
+                 class="flex items-center gap-2 bg-violet-50 border border-violet-200 rounded-lg py-2 px-3">
+              <svg class="w-4 h-4 text-violet-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/>
+                <rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/>
+                <rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/>
+                <rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/>
+              </svg>
+              <span class="text-sm text-violet-700 font-semibold">QR Code</span>
+            </div>
+            <input *ngIf="el.field !== '__QRCode__'" type="text" disabled [value]="el.field"
                    class="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm text-slate-700 font-semibold cursor-not-allowed">
           </div>
 
-          <!-- Font Size -->
-          <div class="flex flex-col gap-2">
-            <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Font Size (px)</label>
-            <input type="number" [(ngModel)]="el.fontSize"
-                   class="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 text-sm focus:border-blue-400 outline-none text-slate-700 transition-colors">
-          </div>
+          <!-- QR Code: Style options -->
+          <ng-container *ngIf="el.field === '__QRCode__'">
 
-          <!-- Color -->
-          <div class="flex flex-col gap-2">
-            <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Color</label>
-            <div class="flex items-center gap-2">
-              <input type="color" [(ngModel)]="el.color"
-                     class="w-10 h-10 border-0 p-0 rounded-lg cursor-pointer shrink-0">
-              <input type="text" [(ngModel)]="el.color"
-                     class="flex-1 min-w-0 bg-white border border-slate-200 rounded-lg py-2.5 px-3 text-sm focus:border-blue-400 outline-none uppercase font-mono text-slate-700">
+            <!-- Size -->
+            <div class="flex flex-col gap-2">
+              <label class="text-[11px] font-semibold text-violet-400 uppercase tracking-wider">Size (px)</label>
+              <div class="flex items-center gap-2">
+                <button (click)="el.width = el.width > 40 ? el.width - 10 : 40"
+                        class="w-8 h-8 shrink-0 flex items-center justify-center rounded-lg border border-violet-200 bg-violet-50 hover:bg-violet-100 text-violet-600 font-bold text-lg transition-colors select-none">−</button>
+                <input type="number" [(ngModel)]="el.width"
+                       class="flex-1 min-w-0 bg-white border border-violet-200 rounded-lg py-2 px-3 text-sm focus:border-violet-400 outline-none text-violet-700 text-center font-semibold">
+                <button (click)="el.width = el.width + 10"
+                        class="w-8 h-8 shrink-0 flex items-center justify-center rounded-lg border border-violet-200 bg-violet-50 hover:bg-violet-100 text-violet-600 font-bold text-lg transition-colors select-none">+</button>
+              </div>
+              <p class="text-[10px] text-violet-300">Always square (width = height)</p>
             </div>
-          </div>
 
-          <!-- Width -->
-          <div class="flex flex-col gap-2">
-            <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Width (px)</label>
-            <input type="number" [(ngModel)]="el.width"
-                   class="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 text-sm focus:border-blue-400 outline-none text-slate-700">
-          </div>
+            <!-- Foreground color -->
+            <div class="flex flex-col gap-2">
+              <label class="text-[11px] font-semibold text-violet-400 uppercase tracking-wider">Dot Color</label>
+              <div class="flex items-center gap-2">
+                <input type="color" [(ngModel)]="el.qrFgColor"
+                       class="w-10 h-10 border-0 p-0 rounded-lg cursor-pointer shrink-0">
+                <input type="text" [(ngModel)]="el.qrFgColor"
+                       class="flex-1 min-w-0 bg-white border border-violet-200 rounded-lg py-2.5 px-3 text-sm focus:border-violet-400 outline-none uppercase font-mono text-violet-700">
+              </div>
+            </div>
+
+            <!-- Background color -->
+            <div class="flex flex-col gap-2">
+              <label class="text-[11px] font-semibold text-violet-400 uppercase tracking-wider">Background Color</label>
+              <div class="flex items-center gap-2">
+                <input type="color" [(ngModel)]="el.qrBgColor"
+                       class="w-10 h-10 border-0 p-0 rounded-lg cursor-pointer shrink-0">
+                <input type="text" [(ngModel)]="el.qrBgColor"
+                       class="flex-1 min-w-0 bg-white border border-violet-200 rounded-lg py-2.5 px-3 text-sm focus:border-violet-400 outline-none uppercase font-mono text-violet-700">
+              </div>
+            </div>
+
+            <!-- Dot style -->
+            <div class="flex flex-col gap-2">
+              <label class="text-[11px] font-semibold text-violet-400 uppercase tracking-wider">Dot Style</label>
+              <div class="flex gap-2">
+                <button *ngFor="let s of ['square','rounded','dots']"
+                        (click)="setQrDotStyle(el, $any(s))"
+                        [ngClass]="el.qrDotStyle === s
+                          ? 'border-violet-500 bg-violet-100 text-violet-700 font-bold'
+                          : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'"
+                        class="flex-1 border rounded-lg py-2 text-xs capitalize transition-colors">
+                  {{ s }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Corner style -->
+            <div class="flex flex-col gap-2">
+              <label class="text-[11px] font-semibold text-violet-400 uppercase tracking-wider">Corner Style</label>
+              <div class="flex gap-2">
+                <button *ngFor="let c of ['square','rounded']"
+                        (click)="setQrCornerStyle(el, $any(c))"
+                        [ngClass]="el.qrCornerStyle === c
+                          ? 'border-violet-500 bg-violet-100 text-violet-700 font-bold'
+                          : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'"
+                        class="flex-1 border rounded-lg py-2 text-xs capitalize transition-colors">
+                  {{ c }}
+                </button>
+              </div>
+            </div>
+
+          </ng-container>
+
+          <!-- Text element properties -->
+          <ng-container *ngIf="el.field !== '__QRCode__'">
+            <!-- Font Size -->
+            <div class="flex flex-col gap-2">
+              <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Font Size (px)</label>
+              <input type="number" [(ngModel)]="el.fontSize"
+                     class="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 text-sm focus:border-blue-400 outline-none text-slate-700 transition-colors">
+            </div>
+
+            <!-- Color -->
+            <div class="flex flex-col gap-2">
+              <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Color</label>
+              <div class="flex items-center gap-2">
+                <input type="color" [(ngModel)]="el.color"
+                       class="w-10 h-10 border-0 p-0 rounded-lg cursor-pointer shrink-0">
+                <input type="text" [(ngModel)]="el.color"
+                       class="flex-1 min-w-0 bg-white border border-slate-200 rounded-lg py-2.5 px-3 text-sm focus:border-blue-400 outline-none uppercase font-mono text-slate-700">
+              </div>
+            </div>
+
+            <!-- Width -->
+            <div class="flex flex-col gap-2">
+              <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Width (px)</label>
+              <div class="flex items-center gap-2">
+                <button (click)="el.width = el.width > 20 ? el.width - 10 : 10"
+                        class="w-8 h-8 shrink-0 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold text-lg transition-colors select-none">
+                  −
+                </button>
+                <input type="number" [(ngModel)]="el.width" class="flex-1 min-w-0 bg-white border border-slate-200 rounded-lg py-2 px-3 text-sm focus:border-blue-400 outline-none text-slate-700 text-center">
+                <button (click)="el.width = el.width + 10"
+                        class="w-8 h-8 shrink-0 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold text-lg transition-colors select-none">
+                  +
+                </button>
+              </div>
+            </div>
+          </ng-container>
 
           <!-- Font Weight -->
           <div class="flex flex-col gap-2">

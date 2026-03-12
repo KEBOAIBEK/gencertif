@@ -8,10 +8,16 @@ export interface CanvasElement {
   x: number;
   y: number;
   width: number;
+  height?: number;
   fontSize: number;
   color: string;
   fontWeight: string;
   textAlign: string;
+  // QR Code styling
+  qrFgColor?: string;       // dot/foreground color
+  qrBgColor?: string;       // background color
+  qrDotStyle?: 'square' | 'rounded' | 'dots';      // dot shape
+  qrCornerStyle?: 'square' | 'rounded';             // corner frames shape
 }
 
 @Component({
@@ -24,8 +30,37 @@ export interface CanvasElement {
 export class EditorComponent implements AfterViewInit, OnDestroy {
   @ViewChild('wrapper') wrapper!: ElementRef<HTMLDivElement>;
 
-  availableFields = ['Place', 'Bibcode', 'Distance', 'FullName', 'Age', 'Category', 'Group', 'FullName', 'Age', 'Category', 'Group'];
-  
+  availableFields = ['Place', 'Bibcode', 'Distance', 'FullName', 'Age', 'Category', 'Group'];
+  qrField = '__QRCode__';
+
+  /** 21×21 QR-like module matrix (placeholder — not scannable) */
+  readonly qrMatrix: boolean[][] = (() => {
+    const N = 21;
+    const reserved = (r: number, c: number) =>
+      (r <= 7 && c <= 7) || (r <= 7 && c >= 13) || (r >= 13 && c <= 7) ||
+      r === 6 || c === 6;
+    const m: boolean[][] = Array.from({length: N}, () => Array(N).fill(false));
+    // Timing patterns (alternating, row 6 & col 6, positions 8-12)
+    for (let i = 8; i <= 12; i++) {
+      if (i % 2 === 0) { m[6][i] = true; m[i][6] = true; }
+    }
+    m[8][13] = true; // dark alignment module
+    // Pseudo-random data fill in non-reserved cells
+    for (let r = 0; r < N; r++) {
+      for (let c = 0; c < N; c++) {
+        if (reserved(r, c) || m[r][c]) continue;
+        m[r][c] = (r * 7 + c * 11 + r * c) % 5 > 1;
+      }
+    }
+    return m;
+  })();
+
+  /** Returns true for the 3 finder-pattern zones (including separator) */
+  isFinderArea(r: number, c: number): boolean {
+    return (r <= 7 && c <= 7) || (r <= 7 && c >= 13) || (r >= 13 && c <= 7);
+  }
+
+
   layout: 'portrait' | 'landscape' = 'landscape';
   backgroundImage: string | null = null;
   canvasScale: number = 0.6;
@@ -37,6 +72,13 @@ export class EditorComponent implements AfterViewInit, OnDestroy {
   draggingElementId: string | null = null;
   elementDragOffsetX = 0;
   elementDragOffsetY = 0;
+
+  // Resize state
+  resizingElement: CanvasElement | null = null;
+  private resizeStartX = 0;
+  private resizeStartWidth = 0;
+  private resizeMoveListener = (e: MouseEvent) => this.onResizeMove(e);
+  private resizeEndListener = () => this.onResizeEnd();
 
   private isBrowser: boolean;
   private resizeListener = () => this.calculateScale();
@@ -54,6 +96,8 @@ export class EditorComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy() {
     if (!this.isBrowser) return;
     window.removeEventListener('resize', this.resizeListener);
+    window.removeEventListener('mousemove', this.resizeMoveListener);
+    window.removeEventListener('mouseup', this.resizeEndListener);
   }
 
   calculateScale() {
@@ -159,11 +203,17 @@ export class EditorComponent implements AfterViewInit, OnDestroy {
         field: this.draggedField,
         x: dropX,
         y: dropY,
-        width: 150,
+        width: this.draggedField === '__QRCode__' ? 120 : 150,
+        height: this.draggedField === '__QRCode__' ? 120 : undefined,
         fontSize: 24,
         color: '#000000',
         fontWeight: 'normal',
-        textAlign: 'left'
+        textAlign: 'left',
+        // QR defaults
+        qrFgColor: this.draggedField === '__QRCode__' ? '#000000' : undefined,
+        qrBgColor: this.draggedField === '__QRCode__' ? '#ffffff' : undefined,
+        qrDotStyle: this.draggedField === '__QRCode__' ? 'square' : undefined,
+        qrCornerStyle: this.draggedField === '__QRCode__' ? 'square' : undefined,
       };
 
       this.elements.push(newElement);
@@ -195,6 +245,39 @@ export class EditorComponent implements AfterViewInit, OnDestroy {
   deleteElement(el: CanvasElement) {
     this.elements = this.elements.filter(e => e.id !== el.id);
     this.focusedElement = null;
+  }
+
+  setQrDotStyle(el: CanvasElement, style: 'square' | 'rounded' | 'dots') {
+    el.qrDotStyle = style;
+  }
+
+  setQrCornerStyle(el: CanvasElement, style: 'square' | 'rounded') {
+    el.qrCornerStyle = style;
+  }
+
+
+
+  onResizeStart(event: MouseEvent, el: CanvasElement) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.resizingElement = el;
+    this.resizeStartX = event.clientX;
+    this.resizeStartWidth = el.width;
+    window.addEventListener('mousemove', this.resizeMoveListener);
+    window.addEventListener('mouseup', this.resizeEndListener);
+  }
+
+  private onResizeMove(event: MouseEvent) {
+    if (!this.resizingElement) return;
+    const dx = (event.clientX - this.resizeStartX) / this.canvasScale;
+    const newWidth = Math.max(40, this.resizeStartWidth + dx);
+    this.resizingElement.width = Math.round(newWidth);
+  }
+
+  private onResizeEnd() {
+    this.resizingElement = null;
+    window.removeEventListener('mousemove', this.resizeMoveListener);
+    window.removeEventListener('mouseup', this.resizeEndListener);
   }
 
   downloadJson() {
